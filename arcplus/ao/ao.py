@@ -11,11 +11,14 @@ Adapted from Mark Cederholm's "Using ArcObjects in Python":
 Also see:
     http://gis.stackexchange.com/questions/80/how-do-i-access-arcobjects-from-python/
 '''
-#**** Initialization ****
 
+
+#**** Initialization ****
 def GetLibPath():
-    """Return location of ArcGIS type libraries as string"""
-    # This will still work on 64-bit machines because Python runs in 32 bit mode
+    """
+    Return location of ArcGIS type libraries as string
+    This will still work on 64-bit machines because Python runs in 32 bit mode
+    """
     import _winreg
     HKLM = _winreg.HKEY_LOCAL_MACHINE
     keyESRI = _winreg.OpenKey(HKLM, "SOFTWARE\\ESRI")
@@ -25,18 +28,20 @@ def GetLibPath():
     for i in xrange(_winreg.QueryInfoKey(keyESRI)[0]):
         key = _winreg.EnumKey(keyESRI, i)
         if key[:7] == 'Desktop':
-            L.append(float(key.replace('Desktop','')))
+            L.append(float(key.replace('Desktop', '')))
     latest = 'Desktop{}'.format(sorted(L)[-1])
 
     keyDesktop = _winreg.OpenKey(HKLM, "SOFTWARE\\ESRI\\{}".format(latest))
 
     return _winreg.QueryValueEx(keyDesktop, "InstallDir")[0] + "com\\"
 
+
 def GetModule(sModuleName):
     """Import ArcGIS module"""
     from comtypes.client import GetModule
     sLibPath = GetLibPath()
     GetModule(sLibPath + sModuleName)
+
 
 def GetStandaloneModules():
     """Import commonly used ArcGIS libraries for standalone scripts"""
@@ -49,14 +54,15 @@ def GetStandaloneModules():
     GetModule("esriDataSourcesFile.olb")
     GetModule("esriOutput.olb")
 
+
 def GetDesktopModules():
     """Import basic ArcGIS Desktop libraries"""
     GetModule("esriFramework.olb")
     GetModule("esriArcMapUI.olb")
     GetModule("esriArcCatalogUI.olb")
 
-#**** Helper Functions ****
 
+#**** Helper Functions ****
 def NewObj(MyClass, MyInterface):
     """Creates a new comtypes POINTER object where\n\
     MyClass is the class to be instantiated,\n\
@@ -68,17 +74,19 @@ def NewObj(MyClass, MyInterface):
     except:
         return None
 
+
 def human_readable(num, suffix='B'):
     """Return human readable size from bytes
 
     http://stackoverflow.com/a/1094933/14420
     (orginal by Fred Cirera)
     """
-    for unit in ['','K','M','G','T','P','E','Z']:
+    for unit in ['', 'K', 'M', 'G', 'T', 'P', 'E', 'Z']:
         if abs(num) < 1024.0:
             return "%3.1f %s%s" % (num, unit, suffix)
         num /= 1024.0
     return "%.1f %s%s" % (num, 'Y', suffix)
+
 
 def CType(obj, interface):
     """Casts obj to interface and returns comtypes POINTER or None"""
@@ -88,9 +96,11 @@ def CType(obj, interface):
     except:
         return None
 
+
 def CLSID(MyClass):
     """Return CLSID of MyClass as string"""
     return str(MyClass._reg_clsid_)
+
 
 def InitStandalone():
     """Init standalone ArcGIS license"""
@@ -106,8 +116,8 @@ def InitStandalone():
         return False
     # Get license
     pInit = NewObj(esriSystem.AoInitialize, esriSystem.IAoInitialize)
-    ProductList = [esriSystem.esriLicenseProductCodeAdvanced, \
-                   esriSystem.esriLicenseProductCodeStandard, \
+    ProductList = [esriSystem.esriLicenseProductCodeAdvanced,
+                   esriSystem.esriLicenseProductCodeStandard,
                    esriSystem.esriLicenseProductCodeBasic]
     for eProduct in ProductList:
         licenseStatus = pInit.IsProductCodeAvailable(eProduct)
@@ -116,6 +126,7 @@ def InitStandalone():
         licenseStatus = pInit.Initialize(eProduct)
         return (licenseStatus == esriSystem.esriLicenseCheckedOut)
     return False
+
 
 def GetApp(app="ArcMap"):
     """In a standalone script, retrieves the first app session found.\n\
@@ -141,12 +152,14 @@ def GetApp(app="ArcMap"):
             return pApp
     return None
 
+
 def GetCurrentApp():
     """Gets an IApplication handle to the current app.\n\
     Must be run inside the app's Python window.\n\
     Execute GetDesktopModules() first"""
     import comtypes.gen.esriFramework as esriFramework
     return NewObj(esriFramework.AppRef, esriFramework.IApplication)
+
 
 def Msg(message="Hello world", title="Python ArcObjects"):
     """Open message dialog box with ok button"""
@@ -156,8 +169,8 @@ def Msg(message="Hello world", title="Python ArcObjects"):
     fn = prototype(("MessageBoxA", windll.user32))
     return fn(0, message, title, 0)
 
-#**** Standalone ****
 
+#**** Standalone ****
 def Standalone_OpenFileGDB(gdb):
     """Open file geodatabase and return as esri workspace object"""
     GetStandaloneModules()
@@ -169,13 +182,14 @@ def Standalone_OpenFileGDB(gdb):
 
     #sPath = "c:/apps/Demo/Montgomery_full.gdb"
     sPath = gdb
-    pWSF = NewObj(esriDataSourcesGDB.FileGDBWorkspaceFactory, \
+    pWSF = NewObj(esriDataSourcesGDB.FileGDBWorkspaceFactory,
                   esriGeoDatabase.IWorkspaceFactory)
     pWS = pWSF.OpenFromFile(sPath, 0)
     pDS = CType(pWS, esriGeoDatabase.IDataset)
     print "Workspace name: " + pDS.BrowseName
     print "Workspace category: " + pDS.Category
     return pWS
+
 
 def Standalone_OpenSDE():
     """demo func, values are hardcoded"""
@@ -191,13 +205,14 @@ def Standalone_OpenSDE():
     pPropSet.SetProperty("INSTANCE", "sde:oracle10g:/;LOCAL=PRODUCTION_TUCSON")
     pPropSet.SetProperty("AUTHENTICATION_MODE", "OSA")
     pPropSet.SetProperty("VERSION", "SDE.DEFAULT")
-    pWSF = NewObj(esriDataSourcesGDB.SdeWorkspaceFactory, \
+    pWSF = NewObj(esriDataSourcesGDB.SdeWorkspaceFactory,
                   esriGeoDatabase.IWorkspaceFactory)
     pWS = pWSF.Open(pPropSet, 0)
     pDS = CType(pWS, esriGeoDatabase.IDataset)
     print "Workspace name: " + pDS.BrowseName
     print "Workspace category: " + pDS.Category
     return pWS
+
 
 def Standalone_QueryDBValues():
     """demo func, values are hardcoded"""
@@ -212,7 +227,8 @@ def Standalone_QueryDBValues():
     sWhereClause = "parcel_id = 6358"
     sFieldName = "zoning_s"
 
-    pWSF = NewObj(esriDataSourcesGDB.FileGDBWorkspaceFactory, esriGeoDatabase.IWorkspaceFactory)
+    pWSF = NewObj(esriDataSourcesGDB.FileGDBWorkspaceFactory,
+                  esriGeoDatabase.IWorkspaceFactory)
     pWS = pWSF.OpenFromFile(sPath, 0)
     pFWS = CType(pWS, esriGeoDatabase.IFeatureWorkspace)
     pTab = pFWS.OpenTable(sTabName)
@@ -227,6 +243,7 @@ def Standalone_QueryDBValues():
     if Val is None:
         print "Null value"
 
+
 def Standalone_CreateTable():
     """demo func, values are hardcoded"""
     GetStandaloneModules()
@@ -237,7 +254,7 @@ def Standalone_CreateTable():
 
     sWSPath = "c:/apps/Demo/Temp.gdb"
     sTableName = "Test"
-    pWSF = NewObj(esriDataSourcesGDB.FileGDBWorkspaceFactory, \
+    pWSF = NewObj(esriDataSourcesGDB.FileGDBWorkspaceFactory,
                   esriGeoDatabase.IWorkspaceFactory)
     pWS = pWSF.OpenFromFile(sWSPath, 0)
     pFWS = CType(pWS, esriGeoDatabase.IFeatureWorkspace)
@@ -256,7 +273,7 @@ def Standalone_CreateTable():
     pFieldEdit._Type = esriGeoDatabase.esriFieldTypeString
     pFieldEdit._Length = 50
     pFieldsEdit._Field[1] = pNewField
-    pOutTable = pFWS.CreateTable(sTableName, pOutFields, \
+    pOutTable = pFWS.CreateTable(sTableName, pOutFields,
                                  None, None, "")
 
     iField = pOutTable.FindField("LUMBERJACK")
@@ -264,6 +281,7 @@ def Standalone_CreateTable():
     pRow = pOutTable.CreateRow()
     pRow.Value[iField] = "I sleep all night and I work all day"
     pRow.Store()
+
 
 def GetModifiedDate(gdb, tableName):
     """Return last modified date stamp (in seconds) for the Geodatabase table
@@ -296,6 +314,7 @@ def GetModifiedDate(gdb, tableName):
 
     # Get the date modified
     return pDFS.StatTime(2)
+
 
 def GetFileSize(gdb, tableName, featureDataset):
     """Return gdb feature class size in human readable units (KB,MB,GB,TB)
@@ -330,7 +349,7 @@ def GetFileSize(gdb, tableName, featureDataset):
         pDFS = CType(pTab, esriGeoDatabase.IDatasetFileStat)
 
         # Return the size
-        return convert_bytes(pDFS.StatSize)
+        return human_readable(pDFS.StatSize)
 
     else:
         # Open the feature class
@@ -349,6 +368,7 @@ def GetFileSize(gdb, tableName, featureDataset):
 # ***************************************************************
 
 #**** ArcMap ****
+
 
 def ArcMap_GetSelectedGeometry(bStandalone=False):
 
@@ -391,6 +411,7 @@ def ArcMap_GetSelectedGeometry(bStandalone=False):
     else:
         print "Geometry type = Other"
     return pShape
+
 
 def ArcMap_AddTextElement(bStandalone=False):
 
@@ -453,7 +474,8 @@ def ArcMap_AddTextElement(bStandalone=False):
         pUnk = pFact.Create(CLSID(esriDisplay.BalloonCallout))
         pTextBackground = CType(pUnk, esriDisplay.ITextBackground)
     else:
-        pTextBackground = NewObj(esriDisplay.BalloonCallout, esriDisplay.ITextBackground)
+        pTextBackground = NewObj(esriDisplay.BalloonCallout,
+                                 esriDisplay.ITextBackground)
     pFormattedTS = CType(pTextSymbol, esriDisplay.IFormattedTextSymbol)
     pFormattedTS.Background = pTextBackground
 
@@ -473,8 +495,7 @@ def ArcMap_AddTextElement(bStandalone=False):
     pGC.AddElement(pElement, 0)
     pGCSel = CType(pMap, esriCarto.IGraphicsContainerSelect)
     pGCSel.SelectElement(pElement)
-    iOpt = esriCarto.esriViewGraphics + \
-           esriCarto.esriViewGraphicSelection
+    iOpt = esriCarto.esriViewGraphics + esriCarto.esriViewGraphicSelection
     pAV.PartialRefresh(iOpt, None, None)
 
     # Get element width
@@ -484,6 +505,7 @@ def ArcMap_AddTextElement(bStandalone=False):
     pEnv = NewObj(esriGeometry.Envelope, esriGeometry.IEnvelope)
     pElement.QueryBounds(pSD, pEnv)
     print "Width = ", pEnv.Width
+
 
 def ArcMap_GetEditWorkspace(bStandalone=False):
 
@@ -507,6 +529,7 @@ def ArcMap_GetEditWorkspace(bStandalone=False):
         print "Workspace name: " + pDS.BrowseName
         print "Workspace category: " + pDS.Category
     return
+
 
 def ArcMap_GetSelectedTable(bStandalone=False):
 
@@ -532,8 +555,8 @@ def ArcMap_GetSelectedTable(bStandalone=False):
     pDS = CType(pTable, esriGeoDatabase.IDataset)
     print "Selected table: " + pDS.Name
 
-#**** ArcCatalog ****
 
+#**** ArcCatalog ****
 def ArcCatalog_GetSelectedTable(bStandalone=False):
 
     GetDesktopModules()
@@ -556,10 +579,10 @@ def ArcCatalog_GetSelectedTable(bStandalone=False):
         print "No dataset selected."
         return
     eType = pGxDS.Type
-    if not (eType == esriGeoDatabase.esriDTFeatureClass or eType == esriGeoDatabase.esriDTTable):
+    if not (eType == esriGeoDatabase.esriDTFeatureClass or
+            eType == esriGeoDatabase.esriDTTable):
         print "No table selected."
         return
     pDS = pGxDS.Dataset
     pTable = CType(pDS, esriGeoDatabase.ITable)
     print "Selected table: " + pDS.Name
-
