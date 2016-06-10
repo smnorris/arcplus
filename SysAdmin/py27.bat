@@ -7,10 +7,10 @@ goto :eof
   :: extract python version from last 2 characters of batch filename
   set _ver=%1
   set _ver=%_ver:~-2%
-  
-  set PYTHONHOME=C:\Python%_ver%\ArcGIS10.3
-  set PROMPT=[py%_ver%] $p$_$g 
-  
+
+  set PYTHONHOME=C:\Python%_ver%\ArcGIS10.4
+  set PROMPT=[py%_ver%] $p$_$g
+
   set _path=%PYTHONHOME%
   call addpath _path
   set _path=%PYTHONHOME%\Scripts
