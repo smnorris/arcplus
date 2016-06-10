@@ -2,10 +2,11 @@
 Given an mxd, read all layers and dump to a human (and machine) readable list:
 Symbolization details such as colour are not accessible via arcpy.
 '''
+import os
+import csv
 
 import arcpy
-import csv
-#from arcplus import ao
+
 
 # introspection of the arcpy layer object doesn't work that well,
 # just hard code a list of properties to inspect via arcpy.mapping
@@ -89,18 +90,20 @@ def layer_dict(lyr):
     return pr
 
 
-def ArcMap_DescribeMXD(outfile="arcmap_describe.txt", bStandalone=False):
+def ArcMap_DescribeMXD(infile, outpath=None):
     '''
     Describe all layers in an mxd, dump to text file
     '''
-    in_file = r"../Tests/describe_mxd/test.mxd"
-    with MapDoc(arcpy.mapping.MapDocument(in_file)) as mxd:
+    outfile = os.path.splitext(os.path.basename(infile))[0]+"_layers.csv"
+    if outpath:
+        outfile = os.path.join(outpath, outfile)
+    with MapDoc(arcpy.mapping.MapDocument(infile)) as mxd:
         layers = []
         for df in arcpy.mapping.ListDataFrames(mxd):
             for layer in arcpy.mapping.ListLayers(mxd, "", df):
                 layers.append(layer_dict(layer))
     # write to csv
-    with open('test.csv', 'wb') as csvfile:
+    with open(outfile, 'wb') as csvfile:
         columns = [p.lower() for p in PROPERTIES if p != "isgrouplayer"]
         writer = csv.DictWriter(csvfile, fieldnames=columns)
         writer.writeheader()
@@ -110,5 +113,6 @@ def ArcMap_DescribeMXD(outfile="arcmap_describe.txt", bStandalone=False):
                 writer.writerow(row)
 
 if __name__ == "__main__":
-    mxd = r"../Tests/describe_mxd/test.mxd"
-    ArcMap_DescribeMXD("test.txt", True)
+    infile = arcpy.GetParameterAsText(0)
+    outfile = arcpy.GetParameterAsText(1)
+    ArcMap_DescribeMXD(infile, outfile)
